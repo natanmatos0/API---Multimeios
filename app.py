@@ -13,6 +13,8 @@ key = os.environ.get("SUPABASE_KEY")
 
 supabase: Client = create_client(url, key)
 
+
+#Rota a ser alterada
 @app.route('/')
 def index():
     try:
@@ -129,7 +131,7 @@ def upsert_livro():
     try:
         dados = request.get_json()
         
-        # O dicionário com todas as colunas que definimos antes
+        # O dicionário com todas as colunas que definidas antes
         registro = {
             "ID": str(dados.get('ID')),
             "AUTOR": dados.get('AUTOR'),
@@ -167,5 +169,6 @@ def upsert_livro():
 
     
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
