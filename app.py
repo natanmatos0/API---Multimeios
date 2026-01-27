@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
@@ -40,7 +40,6 @@ def buscar_por_id(livro_id):
             supabase.schema("biblioteca") # vai no schema
             .table('livro') # encontra a table
             .select("*") # faz o select *
-            .delete()
             .eq("ID", str(livro_id)) # pega o ID
             .execute()
         )
@@ -48,11 +47,13 @@ def buscar_por_id(livro_id):
         if not response.data:
             return jsonify({"erro": f"Livro com ID '{livro_id}' não encontrado"}), 404
 
-        return jsonify({"mensagem": "Livro eliminado com sucesso!",
-            "item_removido": response.data[0]})
+        return jsonify(response.data[0])
 
     except Exception as e:
-        return jsonify({"erro_interno": str(e)}), 500
+
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
 
 
 # Rota pra deletar o livro por id
@@ -62,7 +63,7 @@ def apagar_por_id(livro_id):
         response = (
             supabase.schema("biblioteca")
             .table("livro")
-            .select("*")
+            .delete()
             .eq("ID", str(livro_id))
             .execute()
         )
@@ -73,7 +74,99 @@ def apagar_por_id(livro_id):
         return jsonify({"Resposta": f"Livro '{response.data[0]["LIVRO"]}' apagado com sucesso"})
     
     except Exception as e:
-        return jsonify({"erro interno":str(e)}), 500
+
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+@app.route('/livro/post', methods=['POST'])
+def adicionar_livro_completo():
+    try:
+        dados = request.get_json()
+
+        # Montamos o dicionário com os nomes EXATOS das colunas do banco
+        novo_registro = {
+            "ID": str(dados.get('ID')),
+            "AUTOR": dados.get('AUTOR'),
+            "LIVRO": dados.get('LIVRO'),
+            "ESTANTE": dados.get('ESTANTE'),
+            "VOLUME": dados.get('VOLUME'),
+            "EXEMPLAR": dados.get('EXEMPLAR'),
+            "CIDADE": dados.get('CIDADE'),
+            "EDITORA": dados.get('EDITORA'),
+            "ANO": dados.get('ANO'),
+            "ORIGEM": dados.get('ORIGEM'),
+            "CÓDIGO": dados.get('CÓDIGO'), # Atenção ao acento
+            "DATA": dados.get('DATA'),
+            "ADAPTADO POR": dados.get('ADAPTADO_POR') # Mapeamos de uma chave simples para a coluna com asterisco
+        }
+
+        # Validação mínima (ID e LIVRO são essenciais)
+        if not novo_registro["ID"] or not novo_registro["LIVRO"]:
+            return jsonify({"erro": "ID e LIVRO são campos obrigatórios"}), 400
+
+        # Inserção no Supabase
+        response = (
+            supabase.schema("biblioteca")
+            .table('livro')
+            .insert(novo_registro)
+            .execute()
+        )
+
+        return jsonify({
+            "status": "sucesso",
+            "dados_inseridos": response.data[0]
+        }), 201
+
+    except Exception as e:
+
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+    
+@app.route('/livro/upsert', methods=['POST'])
+def upsert_livro():
+    try:
+        dados = request.get_json()
+        
+        # O dicionário com todas as colunas que definimos antes
+        registro = {
+            "ID": str(dados.get('ID')),
+            "AUTOR": dados.get('AUTOR'),
+            "LIVRO": dados.get('LIVRO'),
+            "ESTANTE": dados.get('ESTANTE'),
+            "VOLUME": dados.get('VOLUME'),
+            "EXEMPLAR": dados.get('EXEMPLAR'),
+            "CIDADE": dados.get('CIDADE'),
+            "EDITORA": dados.get('EDITORA'),
+            "ANO": dados.get('ANO'),
+            "ORIGEM": dados.get('ORIGEM'),
+            "CÓDIGO": dados.get('CÓDIGO'), # Atenção ao acento
+            "DATA": dados.get('DATA'),
+            "*ADAPTADO POR": dados.get('ADAPTADO_POR') # Mapeamos de uma chave simples para a coluna com asterisco
+        }
+
+        # O comando .upsert() usa a "Primary Key" (o ID) para decidir 
+        # se cria ou se atualiza.
+        response = (
+            supabase.schema("biblioteca")
+            .table('livro')
+            .upsert(registro) 
+            .execute()
+        )
+
+        return jsonify({
+            "status": "sucesso (upsert)",
+            "dados": response.data[0]
+        }), 201
+
+    except Exception as e:
+
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
