@@ -31,7 +31,7 @@ def index():
     
 
 
-# Rota para a buscar o livro por id
+# Rota pra a buscar o livro por id
 @app.route('/livro/get/<livro_id>')
 def buscar_por_id(livro_id):
     try:
@@ -54,6 +54,8 @@ def buscar_por_id(livro_id):
     except Exception as e:
         return jsonify({"erro_interno": str(e)}), 500
 
+
+# Rota pra deletar o livro por id
 @app.route('/livro/delete/<livro_id>')
 def apagar_por_id(livro_id):
     try:
