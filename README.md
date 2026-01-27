@@ -15,7 +15,7 @@ Campos esperados para um registro de livro:
 - "AUTOR" (string) — nome do(s) autor(es).
 - "LIVRO" (string) — título do livro.
 - "ESTANTE" (string) — localização física (ex.: sala/estante/prateleira).
-- "VOLUME" (string|int, opcional) — número do volume, se houver.
+- "VOLUME" (string, opcional) — número do volume, se houver.
 - "EXEMPLAR" (string|int, opcional) — número do exemplar.
 - "CIDADE" (string, opcional) — cidade de publicação.
 - "EDITORA" (string, opcional) — editora.
