@@ -10,8 +10,7 @@ app = Flask(__name__)
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 
-# 2. Criamos o cliente da forma MAIS SIMPLES possível
-# Sem usar o parâmetro 'options', evitamos o erro de 'storage' ou 'headers'
+
 supabase: Client = create_client(url, key)
 
 @app.route('/')
@@ -84,7 +83,7 @@ def adicionar_livro_completo():
     try:
         dados = request.get_json()
 
-        # Montamos o dicionário com os nomes EXATOS das colunas do banco
+        # Montamos o dicionário com os nomes das colunas do banco
         novo_registro = {
             "ID": str(dados.get('ID')),
             "AUTOR": dados.get('AUTOR'),
@@ -96,9 +95,9 @@ def adicionar_livro_completo():
             "EDITORA": dados.get('EDITORA'),
             "ANO": dados.get('ANO'),
             "ORIGEM": dados.get('ORIGEM'),
-            "CÓDIGO": dados.get('CÓDIGO'), # Atenção ao acento
+            "CÓDIGO": dados.get('CÓDIGO'), 
             "DATA": dados.get('DATA'),
-            "ADAPTADO POR": dados.get('ADAPTADO_POR') # Mapeamos de uma chave simples para a coluna com asterisco
+            "ADAPTADO POR": dados.get('ADAPTADO_POR') 
         }
 
         # Validação mínima (ID e LIVRO são essenciais)
@@ -142,9 +141,9 @@ def upsert_livro():
             "EDITORA": dados.get('EDITORA'),
             "ANO": dados.get('ANO'),
             "ORIGEM": dados.get('ORIGEM'),
-            "CÓDIGO": dados.get('CÓDIGO'), # Atenção ao acento
+            "CÓDIGO": dados.get('CÓDIGO'), 
             "DATA": dados.get('DATA'),
-            "*ADAPTADO POR": dados.get('ADAPTADO_POR') # Mapeamos de uma chave simples para a coluna com asterisco
+            "*ADAPTADO POR": dados.get('ADAPTADO_POR') 
         }
 
         # O comando .upsert() usa a "Primary Key" (o ID) para decidir 
