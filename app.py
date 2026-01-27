@@ -10,16 +10,16 @@ app = Flask(__name__)
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 
-# 2. Criamos o cliente da forma MAIS SIMPLES possível
-# Sem usar o parâmetro 'options', evitamos o erro de 'storage' ou 'headers'
 supabase: Client = create_client(url, key)
 
+
+# Mostra todo catalogo de livros
 @app.route('/')
 def index():
     try:
         response = supabase.schema("biblioteca").table('livro').select("*").execute()
         
-        # Se chegar aqui, a conexão funcionou!
+        # Se chegar aqui, a conexão funcionou
         if not response.data:
             return "<h1>Conectado!</h1><p>Mas a tabela 'livro' no esquema 'biblioteca' retornou 0 registros.</p>"
         
@@ -84,7 +84,7 @@ def adicionar_livro_completo():
     try:
         dados = request.get_json()
 
-        # Montamos o dicionário com os nomes EXATOS das colunas do banco
+        # Dicionario com os nomes das colunas do banco
         novo_registro = {
             "ID": str(dados.get('ID')),
             "AUTOR": dados.get('AUTOR'),
@@ -96,9 +96,9 @@ def adicionar_livro_completo():
             "EDITORA": dados.get('EDITORA'),
             "ANO": dados.get('ANO'),
             "ORIGEM": dados.get('ORIGEM'),
-            "CÓDIGO": dados.get('CÓDIGO'), # Atenção ao acento
+            "CÓDIGO": dados.get('CÓDIGO'), 
             "DATA": dados.get('DATA'),
-            "ADAPTADO POR": dados.get('ADAPTADO_POR') # Mapeamos de uma chave simples para a coluna com asterisco
+            "ADAPTADO POR": dados.get('ADAPTADO_POR') 
         }
 
         # Validação mínima (ID e LIVRO são essenciais)
@@ -130,7 +130,7 @@ def upsert_livro():
     try:
         dados = request.get_json()
         
-        # O dicionário com todas as colunas que definimos antes
+        # O dicionário com todas as colunas 
         registro = {
             "ID": str(dados.get('ID')),
             "AUTOR": dados.get('AUTOR'),
@@ -142,9 +142,9 @@ def upsert_livro():
             "EDITORA": dados.get('EDITORA'),
             "ANO": dados.get('ANO'),
             "ORIGEM": dados.get('ORIGEM'),
-            "CÓDIGO": dados.get('CÓDIGO'), # Atenção ao acento
+            "CÓDIGO": dados.get('CÓDIGO'), 
             "DATA": dados.get('DATA'),
-            "*ADAPTADO POR": dados.get('ADAPTADO_POR') # Mapeamos de uma chave simples para a coluna com asterisco
+            "ADAPTADO POR": dados.get('ADAPTADO_POR') 
         }
 
         # O comando .upsert() usa a "Primary Key" (o ID) para decidir 
@@ -168,5 +168,6 @@ def upsert_livro():
 
     
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
