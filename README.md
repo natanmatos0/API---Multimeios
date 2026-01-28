@@ -2,9 +2,7 @@
 
 Esta API expõe endpoints para gerenciar o acervo de livros. Nesta versão a representação dos registros usa o conjunto de colunas/atributos abaixo — os exemplos mostram JSON com as chaves exatamente como especificadas (com acentos e espaços quando aplicável). Observe que chaves com espaços ou caracteres especiais devem ser sempre enviadas entre aspas no JSON e com codificação UTF-8.
 
-Base URL (exemplo): `https://api.exemplo.com`  
-Formato: `application/json`  
-Autenticação: não especificada (documentar se aplicável).
+Base URL: `https://api-multimeios.onrender.com`  
 
 ---
 
@@ -53,12 +51,12 @@ Exemplo de cabeçalho CSV (mesma ordem):
 
 ### 1) Consultar um registro
 - Método: GET  
-- Endpoint: `/livro/update/<ID>`  
+- Endpoint: `/livro/get/<ID>`  
 - Descrição: Retorna o registro do livro com o `ID` informado.
 
 Exemplo:
 ```bash
-curl -X GET "https://api.exemplo.com/livro/update/123" \
+curl -X GET "https://api-multimeios.onrender.com/livro/get/123" \
   -H "Accept: application/json"
 ```
 
@@ -79,7 +77,7 @@ Códigos possíveis:
 
 Exemplo:
 ```bash
-curl -X POST "https://api.exemplo.com/livro/post" \
+curl -X POST "[https://api.exemplo.com](https://api-multimeios.onrender.com)/livro/post" \
   -H "Content-Type: application/json; charset=utf-8" \
   -d '{
     "ID": "123",
@@ -125,7 +123,7 @@ Exemplo e códigos de resposta similares ao endpoint de criação:
 
 Exemplo:
 ```bash
-curl -X DELETE "https://api.exemplo.com/livro/delete/123"
+curl -X DELETE "https://api-multimeios.onrender.com/livro/delete/123"
 ```
 
 Respostas:
