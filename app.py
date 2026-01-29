@@ -186,6 +186,19 @@ def alugar_livro(id_item):
         return jsonify({"erro": str(e)}), 400
     
 
+# Rota para DEVOLVER um livro
+@app.route('/livro/devolver/<id_item>', methods=['POST'])
+def devolver_livro(id_item):
+    try:
+        # Atualiza a coluna ALUGADO para 'não' onde o ID coincide
+        res = supabase.schema("biblioteca").table("livro").update({"ALUGADO": "não"}).eq("ID", id_item).execute()
+        
+        if res.data:
+            return jsonify({"status": "sucesso", "mensagem": f"Livro {id_item} disponível novamente."}), 200
+        return jsonify({"erro": "Livro não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
