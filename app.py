@@ -174,7 +174,7 @@ def alugar_livro(id_item):
     try:
         # Realiza o update na tabela 'livro' onde o ID coincide com o fornecido
         # Define a coluna 'ALUGADO' como 'sim'
-        data = supabase.table("livro").update({"ALUGADO": "sim"}).eq("ID", id_item).execute()
+        data = supabase.schema("biblioteca").table("livro").update({"ALUGADO": "sim"}).eq("ID", id_item).execute()
         
         # Verifica se o livro foi encontrado e atualizado
         if len(data.data) > 0:
