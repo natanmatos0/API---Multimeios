@@ -199,6 +199,22 @@ def devolver_livro(id_item):
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
 
+
+# Rota para LISTAR apenas livros alugados
+@app.route('/livros/alugados', methods=['GET'])
+def listar_alugados():
+    try:
+        # Filtra na tabela 'livro' onde 'ALUGADO' é igual a 'sim'
+        res = supabase.schema("biblioteca").table("livro").select("*").eq("ALUGADO", "sim").execute()
+        
+        return jsonify({
+            "quantidade": len(res.data),
+            "livros_alugados": res.data
+        }), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
