@@ -2,10 +2,12 @@ import os
 from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from flask_cors import CORS
 
 # 1. Carregamos as variáveis
 load_dotenv()
 app = Flask(__name__)
+CORS(app)
 
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
