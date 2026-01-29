@@ -38,12 +38,13 @@ Exemplo de objeto JSON (note as aspas nas chaves com espaço/acentos):
   "ORIGEM": "Doação",
   "CÓDIGO": "TOMBO-0001",
   "DATA": "2024-05-10",
-  "ADAPTADO POR": "Ciclano"
+  "ADAPTADO POR": "Ciclano",
+  "ALUGADO": "nao"
 }
 ```
 
 Exemplo de cabeçalho CSV (mesma ordem):
-"ID","AUTOR","LIVRO","ESTANTE","VOLUME","EXEMPLAR","CIDADE","EDITORA","ANO","ORIGEM","CÓDIGO","DATA","ADAPTADO POR"
+"ID","AUTOR","LIVRO","ESTANTE","VOLUME","EXEMPLAR","CIDADE","EDITORA","ANO","ORIGEM","CÓDIGO","DATA","ADAPTADO POR","ALUGADO"
 
 ---
 
@@ -130,6 +131,79 @@ Respostas:
 - 204 No Content — removido com sucesso.
 - 404 Not Found — não encontrado.
 - 500 Internal Server Error.
+
+---
+
+### 5)  Alugar livro
+- Método: POST
+- Endpoint: `/livro/alugar/<ID>`
+- Descrição: Localiza o livro pelo ID fornecido na URL e altera o valor da coluna ALUGADO para "sim".
+
+Exemplo:
+```bash
+curl -X POST "https://api-multimeios.onrender.com/livro/alugar/123"
+```
+
+Respostas:
+- 200 OK — Status alterado para "sim" com sucesso.
+
+- 404 Not Found — O ID do livro informado não existe no banco.
+
+- 400 Bad Request — Erro de comunicação com o banco/schema.
+
+- 500 Internal Server Error — Falha inesperada no servidor.
+
+---
+
+### 6) Devolver livro
+- Método: POST
+- Endpoint: `/livro/devolver/<ID>`
+- Descrição: Localiza o livro pelo ID fornecido na URL e altera o valor da coluna ALUGADO para "não".
+
+Exemplo:
+
+```Bash 
+curl -X POST "https://api-multimeios.onrender.com/livro/devolver/123"
+```
+
+Respostas:
+- 200 OK — Status alterado para "não" com sucesso.
+- 404 Not Found — O ID do livro informado não existe no banco.
+- 400 Bad Request — Erro de comunicação com o banco/schema.
+- 500 Internal Server Error — Falha inesperada no servidor.
+
+---
+
+### 7) Listar livros alugados
+- Método: GET
+- Endpoint: `/livros/alugados`
+- Descrição: Filtra o banco de dados e retorna apenas os livros que possuem o valor "sim" na coluna ALUGADO.
+
+Exemplo:
+```Bash
+curl -X GET "https://api-multimeios.onrender.com/livros/alugados"
+```
+
+Respostas:
+- 200 OK — Retorna a lista de livros alugados com sucesso.
+- 400 Bad Request — Erro de comunicação com o banco/schema.
+- 500 Internal Server Error — Falha inesperada no servidor.
+
+---
+
+### 8) Listar livros disponíveis
+- Método: GET
+- Endpoint: `/livros/disponiveis`
+- Descrição: Filtra o banco de dados e retorna apenas os livros que possuem o valor "não" na coluna ALUGADO.
+
+Exemplo:
+```Bash
+curl -X GET "https://api-multimeios.onrender.com/livros/disponiveis"
+```
+Respostas:
+- 200 OK — Retorna a lista de livros disponíveis com sucesso.
+- 400 Bad Request — Erro de comunicação com o banco/schema.
+- 500 Internal Server Error — Falha inesperada no servidor.
 
 ---
 
