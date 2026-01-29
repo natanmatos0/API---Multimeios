@@ -167,6 +167,23 @@ def upsert_livro():
         print(f"Erro: {str(e)}")
         return jsonify({"erro_detalhado": str(e)}), 500
 
+
+# Rota para alugar um livro
+@app.route('/livro/alugar/<id_item>', methods=['POST'])
+def alugar_livro(id_item):
+    try:
+        # Realiza o update na tabela 'livro' onde o ID coincide com o fornecido
+        # Define a coluna 'ALUGADO' como 'sim'
+        data = supabase.table("livro").update({"ALUGADO": "sim"}).eq("ID", id_item).execute()
+        
+        # Verifica se o livro foi encontrado e atualizado
+        if len(data.data) > 0:
+            return jsonify({"mensagem": f"Livro {id_item} alugado com sucesso!", "dados": data.data}), 200
+        else:
+            return jsonify({"erro": "Livro não encontrado"}), 404
+            
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
     
 
 if __name__ == "__main__":
