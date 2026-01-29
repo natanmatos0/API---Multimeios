@@ -78,7 +78,7 @@ Códigos possíveis:
 
 Exemplo:
 ```bash
-curl -X POST "[https://api.exemplo.com](https://api-multimeios.onrender.com)/livro/post" \
+curl -X POST "https://api-multimeios.onrender.com/livro/post" \
   -H "Content-Type: application/json; charset=utf-8" \
   -d '{
     "ID": "123",
