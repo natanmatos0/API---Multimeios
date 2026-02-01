@@ -171,19 +171,40 @@ def upsert_livro():
 
 
 # Rota para alugar um livro
+from datetime import datetime, timedelta
+
 @app.route('/livro/alugar/<id_item>', methods=['POST'])
 def alugar_livro(id_item):
     try:
-        # Realiza o update na tabela 'livro' onde o ID coincide com o fornecido
-        # Define a coluna 'ALUGADO' como 'sim'
-        data = supabase.schema("biblioteca").table("livro").update({"ALUGADO": "sim"}).eq("ID", id_item).execute()
+        dados_recebidos = request.get_json()
         
-        # Verifica se o livro foi encontrado e atualizado
-        if len(data.data) > 0:
-            return jsonify({"mensagem": f"Livro {id_item} alugado com sucesso!", "dados": data.data}), 200
-        else:
-            return jsonify({"erro": "Livro não encontrado"}), 404
-            
+        nome_aluno = dados_recebidos.get('ALUNO')
+        data_aluguel_str = dados_recebidos.get('DATA_ALUGUEL') # Recebe "YYYY-MM-DD"
+
+        # Converte a string da data para um objeto datetime para poder somar dias
+        data_aluguel_obj = datetime.strptime(data_aluguel_str, "%Y-%m-%d")
+        
+        # Calcula a data de entrega (7 dias depois)
+        data_entrega_obj = data_aluguel_obj + timedelta(days=7)
+        
+        # Converte de volta para string para salvar no banco
+        data_entrega_str = data_entrega_obj.strftime("%Y-%m-%d")
+
+        # Atualiza as colunas no Supabase
+        res = supabase.schema("biblioteca").table("livro").update({
+            "ALUGADO": "sim",
+            "ALUNO": nome_aluno,
+            "DATA ALUGUEL": data_aluguel_str,
+            "DATA ENTREGA": data_entrega_str  # Nome exato da sua coluna no banco
+        }).eq("ID", id_item).execute()
+        
+        if res.data:
+            return jsonify({
+                "status": "sucesso", 
+                "mensagem": f"Livro alugado para {nome_aluno}. Entrega em {data_entrega_str}."
+            }), 200
+        
+        return jsonify({"erro": "Livro não encontrado"}), 404
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
     
