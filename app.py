@@ -213,15 +213,23 @@ def alugar_livro(id_item):
 @app.route('/livro/devolver/<id_item>', methods=['POST'])
 def devolver_livro(id_item):
     try:
-        # Atualiza a coluna ALUGADO para 'não' onde o ID coincide
-        res = supabase.schema("biblioteca").table("livro").update({"ALUGADO": "não"}).eq("ID", id_item).execute()
+        # Atualiza ALUGADO para 'não' e limpa os campos de registro de empréstimo
+        res = supabase.schema("biblioteca").table("livro").update({
+            "ALUGADO": "não",
+            "ALUNO": None,
+            "DATA ALUGUEL": None,
+            "DATA ENTREGA": None
+        }).eq("ID", id_item).execute()
         
         if res.data:
-            return jsonify({"status": "sucesso", "mensagem": f"Livro {id_item} disponível novamente."}), 200
+            return jsonify({
+                "status": "sucesso", 
+                "mensagem": f"Livro {id_item} devolvido e registros limpos."
+            }), 200
+            
         return jsonify({"erro": "Livro não encontrado"}), 404
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
-
 
 # Rota para LISTAR apenas livros alugados
 @app.route('/livros/alugados', methods=['GET'])
