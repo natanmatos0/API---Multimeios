@@ -134,40 +134,41 @@ Respostas:
 
 ---
 
-### 5)  Alugar livro
+### 5) Alugar livro
+
 - Método: POST
-- Endpoint: `/livro/alugar/<ID>`
-- Descrição: Localiza o livro pelo ID fornecido na URL e altera o valor da coluna ALUGADO para "sim".
+- Endpoint: /livro/alugar/<ID>
+- Descrição: Localiza o livro pelo ID, altera o status para "sim", registra o nome do aluno e a data do aluguel. O sistema calcula automaticamente a DATA ENTREGA para 7 dias após a data informada.
 
 Exemplo:
-```bash
-curl -X POST "https://api-multimeios.onrender.com/livro/alugar/123"
+
+```Bash
+
+curl -X POST "https://api-multimeios.onrender.com/livro/alugar/123" \
+     -H "Content-Type: application/json" \
+     -d '{"ALUNO": "Natan Matos", "DATA_ALUGUEL": "2026-02-01"}'
 ```
-
 Respostas:
-- 200 OK — Status alterado para "sim" com sucesso.
-
+- 200 OK — Aluguel registrado e data de entrega calculada com sucesso.
 - 404 Not Found — O ID do livro informado não existe no banco.
-
-- 400 Bad Request — Erro de comunicação com o banco/schema.
-
+- 400 Bad Request — Formato de data inválido ou erro de comunicação com o banco/schema.
 - 500 Internal Server Error — Falha inesperada no servidor.
 
 ---
 
 ### 6) Devolver livro
 - Método: POST
-- Endpoint: `/livro/devolver/<ID>`
-- Descrição: Localiza o livro pelo ID fornecido na URL e altera o valor da coluna ALUGADO para "não".
+- Endpoint: /livro/devolver/<ID>
+- Descrição: Localiza o livro pelo ID, altera o valor da coluna ALUGADO para "não" e limpa os campos ALUNO, DATA ALUGUEL e DATA ENTREGA.
 
 Exemplo:
 
-```Bash 
+```Bash
+
 curl -X POST "https://api-multimeios.onrender.com/livro/devolver/123"
 ```
-
 Respostas:
-- 200 OK — Status alterado para "não" com sucesso.
+- 200 OK — Status alterado para "não" e registros de empréstimo limpos com sucesso.
 - 404 Not Found — O ID do livro informado não existe no banco.
 - 400 Bad Request — Erro de comunicação com o banco/schema.
 - 500 Internal Server Error — Falha inesperada no servidor.
