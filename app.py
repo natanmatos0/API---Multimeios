@@ -259,6 +259,22 @@ def listar_disponiveis():
         }), 200
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
+    
+
+USER = os.getenv("LOGIN_USER")
+PASS = os.getenv("LOGIN_PASS")
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"success": False}), 400
+
+    if data.get("username") == USER and data.get("password") == PASS:
+        return jsonify({"success": True})
+
+    return jsonify({"success": False}), 401
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
