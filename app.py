@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from flask_cors import CORS
+import json
 
 # 1. Carregamos as variáveis
 load_dotenv()
@@ -261,21 +262,29 @@ def listar_disponiveis():
         return jsonify({"erro": str(e)}), 400
     
 
-USER = os.getenv("LOGIN_USER")
-PASS = os.getenv("LOGIN_PASS")
+# Carrega a string do .env e converte para uma lista de dicionários
+usuarios_permitidos = json.loads(os.getenv("LISTA_USUARIOS", "[]"))
 
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    try:
+        data = request.get_json()
+        user_input = data.get("username")
+        pass_input = data.get("password")
 
-    if not data:
-        return jsonify({"success": False}), 400
+        # Procura na lista carregada do .env se existe o par user/pass
+        usuario_valido = any(u['user'] == user_input and u['pass'] == pass_input for u in usuarios_permitidos)
 
-    if data.get("username") == USER and data.get("password") == PASS:
-        return jsonify({"success": True})
+        if usuario_valido:
+            return jsonify({
+                "success": True, 
+                "mensagem": f"Bem-vindo, {user_input}!"
+            }), 200
 
-    return jsonify({"success": False}), 401
+        return jsonify({"success": False, "mensagem": "Usuário ou senha incorretos"}), 401
 
+    except Exception as e:
+        return jsonify({"success": False, "erro": "Erro ao processar login"}), 500
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
