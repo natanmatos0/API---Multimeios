@@ -269,8 +269,8 @@ usuarios_permitidos = json.loads(os.getenv("LISTA_USUARIOS", "[]"))
 def login():
     try:
         data = request.get_json()
-        user_input = data.get("username")
-        pass_input = data.get("password")
+        user_input = data.get("user")
+        pass_input = data.get("pass")
 
         # Procura na lista carregada do .env se existe o par user/pass
         usuario_valido = any(u['user'] == user_input and u['pass'] == pass_input for u in usuarios_permitidos)
