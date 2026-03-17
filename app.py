@@ -33,7 +33,25 @@ def index():
         # Se houver erro de permissão (RLS), ele aparecerá aqui
         return f"<h1>Erro de Banco:</h1><p>{str(e)}</p>"
     
+@app.route('/livro/<livro_titulo>')
+def buscar_por_titulo(livro_titulo):
+    try:
+        response = (
+            supabase.schema("biblioteca")
+            .table('livro')
+            .select('*')
+            .eq("LIVRO",livro_titulo)
+            .execute()
+        )
 
+        if not response.data:
+            return jsonify({"erro": f"Livro '{livro_titulo}' nao encontrado"})
+
+        return jsonify(response.data)
+        
+    except Exception as e:
+        print(f"Erro {str(e)}")
+        return jsonify({"Erro_detalhado": str(e)}), 500
 
 # Rota pra a buscar o livro por id
 @app.route('/livro/get/<livro_id>')
