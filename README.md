@@ -50,7 +50,7 @@ Exemplo de cabeçalho CSV (mesma ordem):
 
 ## Endpoints
 
-### 1) Consultar um registro
+### 1) Consultar um registro por id
 - Método: GET  
 - Endpoint: `/livro/get/<ID>`  
 - Descrição: Retorna o registro do livro com o `ID` informado.
@@ -71,7 +71,27 @@ Códigos possíveis:
 
 ---
 
-### 2) Criar um novo registro
+### 2) Consultar um registro por titulo
+- Método: GET
+- Endpoint: `/livro/<livro_titulo>`
+- Denscrição: Retorna os registros dos livros com o `TITULO` infromado
+  
+Exemplo:
+```bash
+curl -X -GET "https://api-multimeios.onrender.com/livro/ONE PIECE"
+  -H "Accept: application/json"
+```
+
+Resposta 200:
+Retorna o objeto JSON conforme modelo acima.
+
+Códigos possíveis:
+- 200 OK — registro encontrado.
+- 404 Not Found — não encontrado.
+- 500 Internal Server Error — erro no servidor.
+
+---
+### 3) Criar um novo registro
 - Método: POST  
 - Endpoint: `/livro/post`  
 - Descrição: Insere um novo livro; deve falhar se `ID` já existir (409 Conflict).
@@ -105,7 +125,7 @@ Respostas:
 
 ---
 
-### 3) Upsert (criar ou atualizar)
+### 4) Upsert (criar ou atualizar)
 - Método: POST  
 - Endpoint: `/livro/upsert`  
 - Descrição: Se `ID` existir — atualiza; se não existir — cria.
@@ -117,7 +137,7 @@ Exemplo e códigos de resposta similares ao endpoint de criação:
 
 ---
 
-### 4) Remover registro
+### 5) Remover registro
 - Método: DELETE  
 - Endpoint: `/livro/delete/<ID>`  
 - Descrição: Remove permanentemente o registro com o ID informado.
@@ -134,7 +154,7 @@ Respostas:
 
 ---
 
-### 5) Alugar livro
+### 6) Alugar livro
 
 - Método: POST
 - Endpoint: /livro/alugar/<ID>
@@ -156,7 +176,7 @@ Respostas:
 
 ---
 
-### 6) Devolver livro
+### 7) Devolver livro
 - Método: POST
 - Endpoint: /livro/devolver/<ID>
 - Descrição: Localiza o livro pelo ID, altera o valor da coluna ALUGADO para "não" e limpa os campos ALUNO, DATA ALUGUEL e DATA ENTREGA.
@@ -175,7 +195,7 @@ Respostas:
 
 ---
 
-### 7) Listar livros alugados
+### 8) Listar livros alugados
 - Método: GET
 - Endpoint: `/livros/alugados`
 - Descrição: Filtra o banco de dados e retorna apenas os livros que possuem o valor "sim" na coluna ALUGADO.
@@ -192,7 +212,7 @@ Respostas:
 
 ---
 
-### 8) Listar livros disponíveis
+### 9) Listar livros disponíveis
 - Método: GET
 - Endpoint: `/livros/disponiveis`
 - Descrição: Filtra o banco de dados e retorna apenas os livros que possuem o valor "não" na coluna ALUGADO.
