@@ -32,6 +32,75 @@ def index():
     except Exception as e:
         # Se houver erro de permissão (RLS), ele aparecerá aqui
         return f"<h1>Erro de Banco:</h1><p>{str(e)}</p>"
+
+@app.route('/total')
+def indext():
+    try:
+        response = supabase.schema("biblioteca").table('livros').select('*').execute()
+        if not response.data:
+            return "<h1>Conectado!</h1><p>Mas a tabela 'livros' no esquema 'biblioteca' retornou 0 registros</p>"
+        
+        return jsonify(response.data)
+    
+    except Exception as e:
+        return f"<h1>Erro de Banco:</h1><p>{str(e)}</p>"
+    
+
+
+@app.route('/livros/<livro_titulo>')
+def buscars_por_titulo(livro_titulo):
+    try:
+        response = (
+            supabase.schema("biblioteca") 
+            .table("livros")              
+            .select("*")                  
+            .ilike("titulo", f"{livro_titulo}%")  
+            .execute()
+)
+
+        if not response.data:
+            return jsonify({"erro": f"Livro '{livro_titulo}' nao encontrado"})
+
+        return jsonify(response.data)
+        
+    except Exception as e:
+        print(f"Erro {str(e)}")
+        return jsonify({"Erro_detalhado": str(e)}), 500
+
+
+@app.route('/livros/post', methods=['POST'])
+def castro_de_livros():
+    try:
+        dados = request.get_json()
+
+        novo_registro = {
+            "numero_de_registro": dados.get("numero_de_registro"),
+            "titulo": dados.get("titulo"),
+            "autor": dados.get("autor"),
+            "genero": dados.get("genero"),
+            "categoria": dados.get("categoria"),
+            "localizacao": dados.get("localizacao"),
+            "observacoes": dados.get("observacoes")
+        }
+        if not novo_registro["numero_de_registro"] or not novo_registro["titulo"]:
+            return jsonify({"erro": "Registro e Titulo são campos obrigatorios"})
+    
+        response = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .insert(novo_registro)
+            .execute()
+            )
+    
+        return jsonify({
+            "status": "sucesso",
+            "dados_inseridos": response.data[0]
+        }), 201
+
+    except Exception as e:
+        print(f"Erro {str(e)}")
+        return jsonify({"erro_datalhaado": str(e)}), 500
+    
     
 @app.route('/livro/<livro_titulo>')
 def buscar_por_titulo(livro_titulo):
