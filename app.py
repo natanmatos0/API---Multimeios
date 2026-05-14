@@ -296,6 +296,43 @@ def alugar_livro(id_item):
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
     
+@app.route('/livros/alugar/<id_item>', methods=['POST'])
+def alugar_livros(id_item):
+    try:
+        dados_recebidos = request.get_json()
+        
+        nome_aluno = dados_recebidos.get('aluno')
+        data_aluguel_str = dados_recebidos.get('data_aluguel') 
+
+        data_aluguel_obj = datetime.strptime(data_aluguel_str, "%Y-%m-%d")
+        data_entrega_obj = data_aluguel_obj + timedelta(days=7)
+        data_entrega_str = data_entrega_obj.strftime("%Y-%m-%d")
+
+
+        res = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .update({
+                "alugado": "sim",      
+                "aluno": nome_aluno,     
+                "data_aluguel": data_aluguel_str,
+                "data_entrega": data_entrega_str 
+            })
+            .eq("numero_de_registro", id_item) 
+            .execute()
+        )
+        
+        if res.data:
+            return jsonify({
+                "status": "sucesso", 
+                "mensagem": f"Livro alugado para {nome_aluno}. Entrega em {data_entrega_str}.",
+                "dados": res.data[0]
+            }), 200
+        
+        return jsonify({"erro": "Livro não encontrado com este número de registro"}), 404
+
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
 
 # Rota para DEVOLVER um livro
 @app.route('/livro/devolver/<id_item>', methods=['POST'])
@@ -319,32 +356,41 @@ def devolver_livro(id_item):
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
 
+@app.route('/livros/devolver/<id_item>', methods=['POST'])
+def devolver_livros(id_item):
+    try:
+        res = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .update({
+                "alugado": "não",
+                "aluno": None,
+                "data_aluguel": None,
+                "data_entrega": None
+            })
+            .eq("numero_de_registro", id_item)
+            .execute()
+        )
+        
+        if res.data:
+            return jsonify({"status": "sucesso", "mensagem": "Livro devolvido com sucesso!"}), 200
+        
+        return jsonify({"erro": "Livro não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 400
+
 # Rota para LISTAR apenas livros alugados
 @app.route('/livros/alugados', methods=['GET'])
 def listar_alugados():
     try:
-        # Filtra na tabela 'livro' onde 'ALUGADO' é igual a 'sim'
-        res = supabase.schema("biblioteca").table("livro").select("*").eq("ALUGADO", "sim").execute()
-        
-        return jsonify({
-            "quantidade": len(res.data),
-            "livros_alugados": res.data
-        }), 200
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 400
-
-
-# Rota para LISTAR livros disponíveis (não alugados)
-@app.route('/livros/disponiveis', methods=['GET'])
-def listar_disponiveis():
-    try:
-        # Filtra onde 'ALUGADO' é 'não'
-        res = supabase.schema("biblioteca").table("livro").select("*").eq("ALUGADO", "não").execute()
-        
-        return jsonify({
-            "quantidade": len(res.data),
-            "livros_disponiveis": res.data
-        }), 200
+        res = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .select("*")
+            .ilike("alugado", "sim%")
+            .execute()
+        )
+        return jsonify(res.data), 200
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
     
