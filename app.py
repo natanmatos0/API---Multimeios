@@ -44,7 +44,7 @@ def indext():
     
     except Exception as e:
         return f"<h1>Erro de Banco:</h1><p>{str(e)}</p>"
-    
+
 
 
 @app.route('/livros/<livro_titulo>')
@@ -305,7 +305,7 @@ def alugar_livros(id_item):
         data_aluguel_str = dados_recebidos.get('data_aluguel') 
 
         data_aluguel_obj = datetime.strptime(data_aluguel_str, "%Y-%m-%d")
-        data_entrega_obj = data_aluguel_obj + timedelta(days=7)
+        data_entrega_obj = data_aluguel_obj + timedelta(days=14)
         data_entrega_str = data_entrega_obj.strftime("%Y-%m-%d")
 
 
@@ -355,6 +355,58 @@ def devolver_livro(id_item):
         return jsonify({"erro": "Livro não encontrado"}), 404
     except Exception as e:
         return jsonify({"erro": str(e)}), 400
+
+@app.route('/livros/renovar/<id_item>', methods=['POST'])
+def renovar_livro(id_item):
+    try:
+        #busca o livro
+        res_livro = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .select("alugado", "data_entrega")
+            .eq("numero_de_registro", id_item)
+            .execute()
+        )
+
+        #Validação do livro
+        if not res_livro.data:
+            return jsonify({"erro": "Livro não encontrado com este número de registro"}), 404
+
+        livro = res_livro.data[0]
+
+        #Validação do aluguel
+        if livro.get("alugado") != "sim" or not livro.get("data_entrega"):
+            return jsonify({"erro": "Este livro não está alugado atualmente para ser renovado"}), 400
+
+        #adiciona mais 14 dias a data
+        data_entrega_atual_str = livro["data_entrega"]
+        data_entrega_obj = datetime.strptime(data_entrega_atual_str, "%Y-%m-%d")
+        
+        nova_data_entrega_obj = data_entrega_obj + timedelta(days=14)
+        nova_data_entrega_str = nova_data_entrega_obj.strftime("%Y-%m-%d")
+
+        #atualiza a data no banco
+        res_update = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .update({
+                "data_entrega": nova_data_entrega_str
+            })
+            .eq("numero_de_registro", id_item)
+            .execute()
+        )
+
+        if res_update.data:
+            return jsonify({
+                "status": "sucesso",
+                "mensagem": f"Livro renovado com sucesso! Nova data de entrega: {nova_data_entrega_str}.",
+                "dados": res_update.data[0]
+            }), 200
+
+        return jsonify({"erro": "Erro ao atualizar a data de renovação"}), 500
+
+    except Exception as e:
+        return jsonify({"erro_detalhado": str(e)}), 400
 
 @app.route('/livros/devolver/<id_item>', methods=['POST'])
 def devolver_livros(id_item):
