@@ -21,7 +21,7 @@ supabase: Client = create_client(url, key)
 @app.route('/')
 def index():
     try:
-        response = supabase.schema("biblioteca").table('livro').select("*").execute()
+        response = supabase.schema("biblioteca").table('livros').select("*").execute()
         
         # Se chegar aqui, a conexão funcionou!
         if not response.data:
@@ -470,6 +470,230 @@ def login():
 
     except Exception as e:
         return jsonify({"success": False, "erro": "Erro ao processar login"}), 500
+
+
+
+
+# Cadastrar um novo aluno
+@app.route('/alunos', methods=['POST'])
+def cadastrar_aluno():
+    try:
+        dados = request.get_json()
+
+        novo_aluno = {
+            "nome": dados.get("nome"),
+            "curso": dados.get("curso"),
+            "ano": dados.get("ano")
+        }
+
+        # Validação dos campos obrigatórios
+        if not novo_aluno["nome"] or not novo_aluno["curso"] or novo_aluno["ano"] is None:
+            return jsonify({"erro": "Os campos 'nome', 'curso' e 'ano' são obrigatórios"}), 400
+
+        response = (
+            supabase.schema("biblioteca")
+            .table("alunos")
+            .insert(novo_aluno)
+            .execute()
+        )
+
+        return jsonify({
+            "status": "sucesso",
+            "aluno_cadastrado": response.data[0]
+        }), 201
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+# Listar todos os alunos
+@app.route('/alunos', methods=['GET'])
+def listar_alunos():
+    try:
+        response = (
+            supabase.schema("biblioteca")
+            .table("alunos")
+            .select("*")
+            .execute()
+        )
+
+        return jsonify(response.data), 200
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+# Buscar aluno por ID
+@app.route('/alunos/<aluno_id>', methods=['GET'])
+def buscar_aluno(aluno_id):
+    try:
+        response = (
+            supabase.schema("biblioteca")
+            .table("alunos")
+            .select("*")
+            .eq("id", aluno_id)
+            .execute()
+        )
+
+        if not response.data:
+            return jsonify({"erro": f"Aluno com ID '{aluno_id}' não encontrado"}), 404
+
+        return jsonify(response.data[0]), 200
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+# Alugar um livro para um aluno
+@app.route('/alunos/<aluno_id>/alugar/<numero_registro>', methods=['POST'])
+def aluno_alugar_livro(aluno_id, numero_registro):
+    try:
+        # 1. Verifica se o aluno existe
+        res_aluno = (
+            supabase.schema("biblioteca")
+            .table("alunos")
+            .select("id, nome")
+            .eq("id", aluno_id)
+            .execute()
+        )
+        if not res_aluno.data:
+            return jsonify({"erro": f"Aluno com ID '{aluno_id}' não encontrado"}), 404
+
+        # 2. Verifica se o livro existe e está disponível
+        res_livro = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .select("numero_de_registro, titulo, alugado")
+            .eq("numero_de_registro", numero_registro)
+            .execute()
+        )
+        if not res_livro.data:
+            return jsonify({"erro": f"Livro '{numero_registro}' não encontrado"}), 404
+
+        livro = res_livro.data[0]
+        if livro.get("alugado") == "sim":
+            return jsonify({"erro": "Este livro já está alugado no momento"}), 409
+
+        # 3. Calcula as datas — data de aluguel é sempre hoje, devolução sempre +14 dias
+        data_aluguel_str = datetime.now().strftime("%Y-%m-%d")
+        data_entrega_prevista_str = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
+
+        # 4. Registra o empréstimo na tabela emprestimos
+        novo_emprestimo = {
+            "aluno_id": aluno_id,
+            "numero_de_registro": numero_registro,
+            "data_aluguel": data_aluguel_str,
+            "data_entrega_prevista": data_entrega_prevista_str,
+            "status": "ativo"
+        }
+        res_emprestimo = (
+            supabase.schema("biblioteca")
+            .table("emprestimos")
+            .insert(novo_emprestimo)
+            .execute()
+        )
+
+        # 5. Atualiza o status do livro para alugado
+        supabase.schema("biblioteca").table("livros").update({
+            "alugado": "sim",
+            "aluno": res_aluno.data[0]["nome"]
+        }).eq("numero_de_registro", numero_registro).execute()
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"Livro '{livro['titulo']}' alugado para {res_aluno.data[0]['nome']}. Devolução até {data_entrega_prevista_str}.",
+            "emprestimo": res_emprestimo.data[0]
+        }), 201
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+# Devolver um livro de um aluno
+@app.route('/alunos/<aluno_id>/devolver/<numero_registro>', methods=['POST'])
+def aluno_devolver_livro(aluno_id, numero_registro):
+    try:
+        # 1. Busca o empréstimo ativo desse aluno com esse livro
+        res_emprestimo = (
+            supabase.schema("biblioteca")
+            .table("emprestimos")
+            .select("*")
+            .eq("aluno_id", aluno_id)
+            .eq("numero_de_registro", numero_registro)
+            .eq("status", "ativo")
+            .execute()
+        )
+
+        if not res_emprestimo.data:
+            return jsonify({"erro": "Nenhum empréstimo ativo encontrado para este aluno e livro"}), 404
+
+        emprestimo = res_emprestimo.data[0]
+        data_devolucao_real = datetime.now().strftime("%Y-%m-%d")
+
+        # 2. Atualiza o empréstimo como devolvido
+        supabase.schema("biblioteca").table("emprestimos").update({
+            "status": "devolvido",
+            "data_devolucao_real": data_devolucao_real
+        }).eq("id", emprestimo["id"]).execute()
+
+        # 3. Libera o livro na tabela livros
+        supabase.schema("biblioteca").table("livros").update({
+            "alugado": "não",
+            "aluno": None,
+            "data_aluguel": None,
+            "data_entrega": None
+        }).eq("numero_de_registro", numero_registro).execute()
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"Livro '{numero_registro}' devolvido com sucesso em {data_devolucao_real}."
+        }), 200
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+# Histórico de empréstimos de um aluno
+@app.route('/alunos/<aluno_id>/historico', methods=['GET'])
+def historico_aluno(aluno_id):
+    try:
+        # Verifica se o aluno existe
+        res_aluno = (
+            supabase.schema("biblioteca")
+            .table("alunos")
+            .select("id, nome")
+            .eq("id", aluno_id)
+            .execute()
+        )
+        if not res_aluno.data:
+            return jsonify({"erro": f"Aluno com ID '{aluno_id}' não encontrado"}), 404
+
+        # Busca todos os empréstimos do aluno
+        res_historico = (
+            supabase.schema("biblioteca")
+            .table("emprestimos")
+            .select("*")
+            .eq("aluno_id", aluno_id)
+            .order("data_aluguel", desc=True)
+            .execute()
+        )
+
+        return jsonify({
+            "aluno": res_aluno.data[0]["nome"],
+            "total_emprestimos": len(res_historico.data),
+            "historico": res_historico.data
+        }), 200
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
