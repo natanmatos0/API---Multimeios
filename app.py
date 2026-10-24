@@ -382,7 +382,7 @@ def renovar_livro(id_item):
         data_entrega_atual_str = livro["data_entrega"]
         data_entrega_obj = datetime.strptime(data_entrega_atual_str, "%Y-%m-%d")
         
-        nova_data_entrega_obj = data_entrega_obj + timedelta(days=14)
+        nova_data_entrega_obj = data_entrega_obj + timedelta(days=7)
         nova_data_entrega_str = nova_data_entrega_obj.strftime("%Y-%m-%d")
 
         #atualiza a data no banco
