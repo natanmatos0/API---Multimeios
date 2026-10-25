@@ -378,14 +378,14 @@ def renovar_livro(id_item):
         if livro.get("alugado") != "sim" or not livro.get("data_entrega"):
             return jsonify({"erro": "Este livro não está alugado atualmente para ser renovado"}), 400
 
-        #adiciona mais 14 dias a data
+        #adiciona mais 7 dias a data
         data_entrega_atual_str = livro["data_entrega"]
         data_entrega_obj = datetime.strptime(data_entrega_atual_str, "%Y-%m-%d")
         
         nova_data_entrega_obj = data_entrega_obj + timedelta(days=7)
         nova_data_entrega_str = nova_data_entrega_obj.strftime("%Y-%m-%d")
 
-        #atualiza a data no banco
+        #atualiza a data no banco (livros)
         res_update = (
             supabase.schema("biblioteca")
             .table("livros")
@@ -395,6 +395,11 @@ def renovar_livro(id_item):
             .eq("numero_de_registro", id_item)
             .execute()
         )
+
+        # Atualiza também o empréstimo ativo correspondente, se houver
+        supabase.schema("biblioteca").table("emprestimos").update({
+            "data_entrega_prevista": nova_data_entrega_str
+        }).eq("numero_de_registro", id_item).eq("status", "ativo").execute()
 
         if res_update.data:
             return jsonify({
@@ -407,6 +412,21 @@ def renovar_livro(id_item):
 
     except Exception as e:
         return jsonify({"erro_detalhado": str(e)}), 400
+
+
+# Rota de compatibilidade para renovação via /renovar/livros
+@app.route('/renovar/livros', methods=['POST'])
+def rota_renovar_livros():
+    dados = request.get_json(silent=True) or {}
+    aluno_id = dados.get("aluno_id")
+    numero_registro = dados.get("numero_registro") or dados.get("id_item")
+    if aluno_id and numero_registro:
+        return aluno_renovar_livro(aluno_id, numero_registro)
+    elif numero_registro:
+        return renovar_livro(numero_registro)
+    return jsonify({
+        "erro": "Para renovar, envie 'aluno_id' e 'numero_registro' no corpo da requisição ou utilize a rota '/alunos/<aluno_id>/renovar/<numero_registro>'"
+    }), 400
 
 @app.route('/livros/devolver/<id_item>', methods=['POST'])
 def devolver_livros(id_item):
@@ -599,7 +619,9 @@ def aluno_alugar_livro(aluno_id, numero_registro):
         # 5. Atualiza o status do livro para alugado
         supabase.schema("biblioteca").table("livros").update({
             "alugado": "sim",
-            "aluno": res_aluno.data[0]["nome"]
+            "aluno": res_aluno.data[0]["nome"],
+            "data_aluguel": data_aluguel_str,
+            "data_entrega": data_entrega_prevista_str
         }).eq("numero_de_registro", numero_registro).execute()
 
         return jsonify({
@@ -607,6 +629,89 @@ def aluno_alugar_livro(aluno_id, numero_registro):
             "mensagem": f"Livro '{livro['titulo']}' alugado para {res_aluno.data[0]['nome']}. Devolução até {data_entrega_prevista_str}.",
             "emprestimo": res_emprestimo.data[0]
         }), 201
+
+    except Exception as e:
+        print(f"Erro: {str(e)}")
+        return jsonify({"erro_detalhado": str(e)}), 500
+
+
+# Renovar um livro para um aluno
+@app.route('/alunos/<aluno_id>/renovar/<numero_registro>', methods=['POST'])
+def aluno_renovar_livro(aluno_id, numero_registro):
+    try:
+        # 1. Verifica se o aluno existe
+        res_aluno = (
+            supabase.schema("biblioteca")
+            .table("alunos")
+            .select("id, nome")
+            .eq("id", aluno_id)
+            .execute()
+        )
+        if not res_aluno.data:
+            return jsonify({"erro": f"Aluno com ID '{aluno_id}' não encontrado"}), 404
+
+        # 2. Verifica se o livro existe
+        res_livro = (
+            supabase.schema("biblioteca")
+            .table("livros")
+            .select("numero_de_registro, titulo, alugado, data_entrega")
+            .eq("numero_de_registro", numero_registro)
+            .execute()
+        )
+        if not res_livro.data:
+            return jsonify({"erro": f"Livro '{numero_registro}' não encontrado"}), 404
+
+        livro = res_livro.data[0]
+
+        # 3. Busca o empréstimo ativo desse aluno com esse livro
+        res_emprestimo = (
+            supabase.schema("biblioteca")
+            .table("emprestimos")
+            .select("*")
+            .eq("aluno_id", aluno_id)
+            .eq("numero_de_registro", numero_registro)
+            .eq("status", "ativo")
+            .execute()
+        )
+
+        if not res_emprestimo.data:
+            return jsonify({"erro": "Nenhum empréstimo ativo encontrado para este aluno e livro"}), 404
+
+        emprestimo = res_emprestimo.data[0]
+
+        # 4. Calcula a nova data de entrega (+7 dias a partir da data de entrega atual)
+        data_entrega_atual_str = emprestimo.get("data_entrega_prevista") or livro.get("data_entrega")
+        if data_entrega_atual_str:
+            data_entrega_obj = datetime.strptime(data_entrega_atual_str, "%Y-%m-%d")
+        else:
+            data_entrega_obj = datetime.now()
+
+        nova_data_entrega_obj = data_entrega_obj + timedelta(days=7)
+        nova_data_entrega_str = nova_data_entrega_obj.strftime("%Y-%m-%d")
+
+        # 5. Atualiza o registro na tabela de empréstimos
+        res_update_emp = (
+            supabase.schema("biblioteca")
+            .table("emprestimos")
+            .update({
+                "data_entrega_prevista": nova_data_entrega_str
+            })
+            .eq("id", emprestimo["id"])
+            .execute()
+        )
+
+        # 6. Atualiza a data de entrega no acervo de livros
+        supabase.schema("biblioteca").table("livros").update({
+            "alugado": "sim",
+            "aluno": res_aluno.data[0]["nome"],
+            "data_entrega": nova_data_entrega_str
+        }).eq("numero_de_registro", numero_registro).execute()
+
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": f"Livro '{livro['titulo']}' renovado para {res_aluno.data[0]['nome']}. Nova data de entrega: {nova_data_entrega_str}.",
+            "emprestimo": res_update_emp.data[0] if res_update_emp.data else emprestimo
+        }), 200
 
     except Exception as e:
         print(f"Erro: {str(e)}")
