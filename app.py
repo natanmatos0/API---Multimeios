@@ -1,5 +1,3 @@
-import time
-from datetime import datetime, timezone
 import os
 from flask import Flask, jsonify, request
 from supabase import create_client, Client
@@ -19,52 +17,21 @@ key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
 
-# Rota de verificação de saúde da API e conexões
+#Rota a ser alterada
 @app.route('/')
 def index():
-    db_status = "ok"
-    db_detalhes = {}
-    http_status = 200
-
     try:
-        db_inicio = time.time()
-        # Teste leve de consulta para validar conectividade e permissões no banco
-        supabase.schema("biblioteca").table("livros").select("*").limit(1).execute()
-        latencia_ms = round((time.time() - db_inicio) * 1000, 2)
+        response = supabase.schema("biblioteca").table('livros').select("*").execute()
+        
+        # Se chegar aqui, a conexão funcionou!
+        if not response.data:
+            return "<h1>Conectado!</h1><p>Mas a tabela 'livro' no esquema 'biblioteca' retornou 0 registros.</p>"
+        
+        return jsonify(response.data)
 
-        db_detalhes = {
-            "status": "conectado",
-            "conexao": "ok",
-            "latencia_ms": latencia_ms,
-            "mensagem": "Conexão com o banco de dados estabelecida com sucesso"
-        }
     except Exception as e:
-        db_status = "erro"
-        http_status = 503
-        db_detalhes = {
-            "status": "desconectado",
-            "conexao": "erro",
-            "mensagem": "Falha na comunicação com o banco de dados",
-            "erro": str(e)
-        }
-
-    status_geral = "saudavel" if db_status == "ok" else "instavel"
-
-    resposta = {
-        "status": status_geral,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "api": {
-            "nome": "API Multimeios",
-            "status": "online",
-            "mensagem": "API operacional"
-        },
-        "banco_de_dados": db_detalhes,
-        "conexoes": {
-            "supabase": "ok" if db_status == "ok" else "erro"
-        }
-    }
-
-    return jsonify(resposta), http_status
+        # Se houver erro de permissão (RLS), ele aparecerá aqui
+        return f"<h1>Erro de Banco:</h1><p>{str(e)}</p>"
 
 @app.route('/total')
 def indext():
